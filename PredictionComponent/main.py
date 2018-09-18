@@ -12,16 +12,27 @@ from keras.layers.embeddings import Embedding
 from keras.preprocessing import sequence
 from sklearn.metrics import accuracy_score
 import numpy as np
+import pandas as pd
 import os
 from keras.layers import GRU
 from keras.models import model_from_json
 
-def self_convert(data, n_in=1, n_out=1, dropnan=True):
-    shifted_data = pd.DataFrame()
+def process_data_for_lstm2(data, lag=1):
+    df = pd.DataFrame(data)
+    columns = [df.shift(i).reset_index() for i in range(1, lag+1)]
+    columns.insert(0, df)
+    df = pd.concat(columns, axis=1)
+    df.dropna(inplace=True)
+    df.drop('index',inplace=True,axis=1)
+    
+    return df
+
+def process_data_for_lstm(data, n_in=1, dropnan=True):
+    shifted_data = data
     for i in range(1, n_in+1):
-        backward_shift = data.shift()
-        shifted_data.columns = list(map(lambda col_name: (col_name + '(t-' + str(i) + ')'), data.columns))
-        print(shifted_data.head())
+        shift_data = pd.DataFrame(data.shift(i)).dropna().reset_index().drop('index', inplace=True, axis=1)
+        shift_data.columns = list(map(lambda col_name : col_name + '(t' + str(i-n_in) + ')', shift_data.columns))
+        shifted_data = pd.concat([shifted_data, shift_data], axis=0)
 
     pass
 
@@ -54,11 +65,18 @@ def train_lstm_model():
     test_x = test_data.drop('Target Class', axis=1)
     test_y = test_data['Target Class']
 
-    print(training_x.head())
-    print(len(training_x.loc[0]))
+    TIME_STEP = 3
+    training_x = process_data_for_lstm2(training_x, TIME_STEP)
+    test_x = process_data_for_lstm2(training_x, TIME_STEP)
+    training_x = training_x.values
+    training_x = np.reshape(training_x, (-1,TIME_STEP+1,6))
+    training_y = training_y.iloc[3:]
+
+    #print(training_x.head())
+    #print(len(training_x.loc[0]))
     model = Sequential()
-    model.add(LSTM(32, input_shape=(6,6)))
-    model.add(Dense(16, activation=tf.nn.relu, input_shape=(len(training_x.columns),)))
+    model.add(LSTM(32, input_shape=(TIME_STEP+1,6)))
+    model.add(Dense(16, activation=tf.nn.relu))
     model.add(Dense(16, activation=tf.nn.relu))
     model.add(Dense(16, activation=tf.nn.relu))
     model.add(Dense(16, activation=tf.nn.relu))
@@ -70,10 +88,11 @@ def train_lstm_model():
         loss='sparse_categorical_crossentropy',
         metrics=['accuracy']
     )
-    training_x = np.reshape(training_x, (-1, 2, 6))
+
+
     model.fit(training_x, training_y, epochs=5)
     test_x = np.reshape(training_x, (-1, 6))
-    evaluate_model(model,test_x, test_y)
+   # evaluate_model(model,test_x, test_y)
 
     return model
 
@@ -117,11 +136,34 @@ def load_cycle():
     test_x, test_y = get_test_data()
     evaluate_model(model, test_x, test_y)
 
+def evaluate_lstm_model():
+    model = load_model('model')
+    test_x, test_y = get_test_data()
+    TIME_STEP = 3
+    test_x = process_data_for_lstm2(test_x, TIME_STEP)
+    test_x = test_x.values
+    test_x = np.reshape(test_x, (-1,TIME_STEP+1,6))
+    test_y = test_y.iloc[TIME_STEP:]
+    print(test_x.shape)
+    print(test_y.shape)
+    evaluate_model(model,test_x, test_y)    
+
 def train_cycle():
     model = train_lstm_model()
     save_model('model1',model)
 
 if __name__ == "__main__":
-    
+    evaluate_lstm_model()
+    #model = train_lstm_model()
+    #save_model('model', model)
+    """     training_data, test_data = run_walk.load_data()
+
+    training_x = training_data.drop('Target Class', axis=1)
+    training_y = training_data['Target Class']
+    test_x = test_data.drop('Target Class', axis=1)
+    test_y = test_data['Target Class']
+    print(training_x.head())
+    print(process_data_for_lstm2(training_x, 3).head()) 
+    """
     pass
 
