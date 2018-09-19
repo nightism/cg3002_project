@@ -20,11 +20,12 @@ from keras.models import model_from_json
 def process_data_for_lstm2(data, lag=1):
     df = pd.DataFrame(data)
     columns = [df.shift(i).reset_index() for i in range(1, lag+1)]
+    #print(columns)
     columns.insert(0, df)
     df = pd.concat(columns, axis=1)
     df.dropna(inplace=True)
     df.drop('index',inplace=True,axis=1)
-    
+
     return df
 
 def process_data_for_lstm(data, n_in=1, dropnan=True):
@@ -41,7 +42,7 @@ def get_test_data():
 
     test_x = test_data.drop('Target Class', axis=1)
     test_y = test_data['Target Class']
-
+    
     return [test_x, test_y]
 
 def evaluate_model(model, test_x, test_y):
@@ -67,7 +68,8 @@ def train_lstm_model():
 
     TIME_STEP = 3
     training_x = process_data_for_lstm2(training_x, TIME_STEP)
-    test_x = process_data_for_lstm2(training_x, TIME_STEP)
+    test_x = process_data_for_lstm2(test_x, TIME_STEP)
+    #print(test_x.shape)
     training_x = training_x.values
     training_x = np.reshape(training_x, (-1,TIME_STEP+1,6))
     training_y = training_y.iloc[3:]
@@ -92,7 +94,7 @@ def train_lstm_model():
 
     model.fit(training_x, training_y, epochs=5)
     test_x = np.reshape(training_x, (-1, 6))
-   # evaluate_model(model,test_x, test_y)
+    evaluate_model(model,test_x, test_y)
 
     return model
 
@@ -104,6 +106,7 @@ def train_model():
     test_x = test_data.drop('Target Class', axis=1)
     test_y = test_data['Target Class']
 
+    
     print(training_x.head())
     print(len(training_x.loc[0]))
     model = Sequential()
@@ -137,16 +140,33 @@ def load_cycle():
     evaluate_model(model, test_x, test_y)
 
 def evaluate_lstm_model():
-    model = load_model('model')
-    test_x, test_y = get_test_data()
+    training_data, test_data = run_walk.load_data()
+    model = load_model('lstm_net')
+    training_x = training_data.drop('Target Class', axis=1)
+    training_y = training_data['Target Class']
+    test_x = test_data.drop('Target Class', axis=1)
+    test_y = test_data['Target Class']
+    
     TIME_STEP = 3
+    training_x = process_data_for_lstm2(training_x, TIME_STEP)
+    training_x = training_x.values
+    training_x = np.reshape(training_x, (-1,TIME_STEP+1,6))
+    training_y = training_y.iloc[3:]
+    
+    print(training_x.shape)
+    print("Evaluating training")
+    evaluate_model(model,training_x, training_y)
+
     test_x = process_data_for_lstm2(test_x, TIME_STEP)
+    print("test shape")
+    print(test_x.shape)
     test_x = test_x.values
     test_x = np.reshape(test_x, (-1,TIME_STEP+1,6))
     test_y = test_y.iloc[TIME_STEP:]
-    print(test_x.shape)
-    print(test_y.shape)
-    evaluate_model(model,test_x, test_y)    
+    
+   # print(test_x.shape)
+    #print(test_y.shape)
+    #evaluate_model(model,test_x, test_y)    
 
 def train_cycle():
     model = train_lstm_model()
