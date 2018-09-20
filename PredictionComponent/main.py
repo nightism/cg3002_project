@@ -29,6 +29,6 @@ def train_lstm(filename):
     evaluate_model(model, lstm_nn.get_predictions, test_x, test_y)
 
 if __name__ == "__main__":
-    train_lstm('model')
+    train_lstm('presentation')
     
     pass
