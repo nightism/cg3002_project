@@ -1,0 +1,30 @@
+Using TensorFlow backend.
+Epoch 1/5
+2018-09-21 06:08:39.061385: I tensorflow/core/platform/cpu_feature_guard.cc:141] Your CPU supports instructions that this TensorFlow binary was not compiled to use: AVX AVX2
+2018-09-21 06:08:40.109756: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1405] Found device 0 with properties:
+name: GeForce GTX 950M major: 5 minor: 0 memoryClockRate(GHz): 1.124
+pciBusID: 0000:01:00.0
+totalMemory: 4.00GiB freeMemory: 3.35GiB
+2018-09-21 06:08:40.116430: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1484] Adding visible gpu devices: 0
+2018-09-21 06:08:41.603613: I tensorflow/core/common_runtime/gpu/gpu_device.cc:965] Device interconnect StreamExecutor with strength 1 edge matrix:
+2018-09-21 06:08:41.608427: I tensorflow/core/common_runtime/gpu/gpu_device.cc:971]      0
+2018-09-21 06:08:41.611686: I tensorflow/core/common_runtime/gpu/gpu_device.cc:984] 0:   N
+2018-09-21 06:08:41.615180: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1097] Created TensorFlow device (/job:localhost/replica:0/task:0/device:GPU:0 with 3064 MB memory) -> physical GPU (device: 0, name: GeForce GTX 950M, pci bus id: 0000:01:00.0, compute capability: 5.0)
+14170/14170 [==============================] - 15s 1ms/step - loss: 0.0975 - acc: 0.9817
+Epoch 2/5
+14170/14170 [==============================] - 21s 2ms/step - loss: 0.0205 - acc: 0.9958
+Epoch 3/5
+14170/14170 [==============================] - 16s 1ms/step - loss: 0.0161 - acc: 0.9969
+Epoch 4/5
+14170/14170 [==============================] - 14s 998us/step - loss: 0.0121 - acc: 0.9978
+Epoch 5/5
+14170/14170 [==============================] - 13s 928us/step - loss: 0.0137 - acc: 0.9972
+[[ 5368    68]
+ [    4 12274]]
+             precision    recall  f1-score   support
+
+          0       1.00      0.99      0.99      5436
+          1       0.99      1.00      1.00     12278
+
+avg / total       1.00      1.00      1.00     17714
+
