@@ -11,7 +11,7 @@ def import_data(label_end=4, object_end=9, seg_end=25, label_start=1, object_sta
     x = None
     y = None
 
-    for i in range(label_start, label_end):  # from 01 to 19, labels
+    for i in range(label_start, label_end):  # from 01 to 20, labels
         folder_name = str('{num:02d}'.format(num=i))
         this_label_x = []
 
