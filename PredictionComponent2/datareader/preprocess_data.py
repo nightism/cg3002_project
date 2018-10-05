@@ -1,4 +1,5 @@
 import numpy as np
+import math
 # from sklearn import preprocessing
 # import import_data as reader
 
@@ -11,8 +12,8 @@ def segmentation(data):
     # print(num_of_row)
 
     window_size = 250
-    half_window_size = window_size / 2
-    num_of_windows = num_of_row / half_window_size - 1
+    half_window_size = int(math.floor(window_size / 2))
+    num_of_windows = int(math.floor(num_of_row / half_window_size - 1))
 
     # print(num_of_windows)
 

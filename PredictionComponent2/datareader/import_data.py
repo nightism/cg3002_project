@@ -1,7 +1,8 @@
 import numpy as np
 import pandas as pd
+import os
 
-import preprocess_data as pre
+from .preprocess_data import preprocess_data as pre
 
 # data from http://archive.ics.uci.edu/ml/datasets/Daily+and+Sports+Activities#
 
@@ -19,7 +20,9 @@ def import_data(label_end=4, object_end=9, seg_end=25, label_start=1, object_sta
             subfolder_name = str(j)
             for k in range(seg_start, seg_end):  # from 01 to 61, segments
                 file_num = str('{num:02d}'.format(num=k))
-                this_x = pd.read_csv("./data/a" + folder_name + "/p" + subfolder_name + "/s" + file_num + ".txt", header = None).values
+                file_name = 'data/a' + folder_name + '/p' + subfolder_name + '/s' + file_num + '.txt'
+                file_name = os.path.join(os.path.dirname(__file__), file_name)
+                this_x = pd.read_csv(file_name, header=None).values
                 # print(this_x.shape[0])
                 # print(this_x.shape[1])
                 # print(this_x)
@@ -27,7 +30,7 @@ def import_data(label_end=4, object_end=9, seg_end=25, label_start=1, object_sta
                 this_label_x = np.append(this_label_x, this_x)
 
         this_label_x = this_label_x.reshape((object_end - object_start) * (seg_end - seg_start) * 125, 45)
-        this_label_x = pre.preprocess_data(this_label_x)
+        this_label_x = pre(this_label_x)
 
         this_y = np.empty(this_label_x.shape[0])
         this_y.fill(i)
