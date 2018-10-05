@@ -1,17 +1,27 @@
-import numpy as np
-from sklearn.metrics import accuracy_score
+import os
 from sklearn.metrics import confusion_matrix
-from sklearn.neighbors import KNeighborsClassifier
 from sklearn.externals import joblib
 
-import import_data as reader
-
+from datareader import import_data as reader
+from knn import export_knn_model
+from knn import knn_model_validation
 
 def main():
 
-    x, y = reader.import_data(label_end=5, object_start=4, object_end=5, seg_end=48, seg_start=25)
+    x_train, y_train = reader.import_data(label_start=1, object_start=1, seg_start=1, label_end=4, object_end=5, seg_end=25)
+    x, y = reader.import_data(label_start=1, object_start=1, seg_start=25, label_end=4, object_end=5, seg_end=41)
 
-    knn = joblib.load('knn_model.pkl')
+    # print(x)
+    # print(y)
+    # export_knn_model.export_knn(x_train, y_train)
+    knn = export_knn_model.export_knn(x_train, y_train)
+    knn_model_validation.validate_knn(x_train, y_train)
+
+    # file_name = 'knn_model.pkl'
+    # file_name = os.path.join(os.path.dirname(__file__), file_name)
+    # print(os.path.dirname(__file__))
+    #
+    # knn = joblib.load(file_name)
 
     cm = confusion_matrix(knn.predict(x), y)
 
