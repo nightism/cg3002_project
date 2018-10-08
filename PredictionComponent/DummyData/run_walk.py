@@ -8,7 +8,7 @@ def load_data(test_ratio=0.2):
     data = pd.read_csv(file_name)
     
     # clean up data.
-    data['Target Class'] = data.apply(lambda row: row['wrist'] + row['activity'] * 2, axis=1)
+    data['Target Class'] = data.apply(lambda row: row['activity'], axis=1)
     data.drop(['username', 'date', 'wrist', 'activity'], axis=1, inplace=True)
     data.drop('time', axis=1, inplace=True)
     

@@ -24,3 +24,5 @@ def load_model(filename):
     # Load weights
     loaded_model = model_from_json(loaded_model_json)
     loaded_model.load_weights(os.path.join(os.path.dirname(__file__), filename + '.h5'))
+
+    return loaded_model

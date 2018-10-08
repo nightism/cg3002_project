@@ -57,7 +57,7 @@ def get_model(train_x, timestep):
     model.add(Dense(16, activation=tf.nn.relu))
     model.add(Dense(16, activation=tf.nn.relu))
     model.add(Dropout(0.4))
-    model.add(Dense(4, activation=tf.nn.softmax))
+    model.add(Dense(2, activation=tf.nn.softmax))
 
     model.compile(
         optimizer=tf.train.AdamOptimizer(),
