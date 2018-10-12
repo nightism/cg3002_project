@@ -23,10 +23,7 @@ def import_data(label_end=4, object_end=9, seg_end=25, label_start=1, object_sta
                 file_name = 'data/a' + folder_name + '/p' + subfolder_name + '/s' + file_num + '.txt'
                 file_name = os.path.join(os.path.dirname(__file__), file_name)
                 this_x = pd.read_csv(file_name, header=None).values
-                # print(this_x.shape[0])
-                # print(this_x.shape[1])
-                # print(this_x)
-                # this_x = this_x.reshape(1, 125 * 45)
+
                 this_label_x = np.append(this_label_x, this_x)
 
         this_label_x = this_label_x.reshape((object_end - object_start) * (seg_end - seg_start) * 125, 45)
