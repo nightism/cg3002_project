@@ -1,10 +1,9 @@
-import numpy as np
 import pandas as pd
 import os
 # data from http://archive.ics.uci.edu/ml/datasets/Daily+and+Sports+Activities#
 
 
-def import_data(label, file_name):
+def import_data(file_name):
 
     x = None
     y = None
@@ -13,19 +12,14 @@ def import_data(label, file_name):
     x = pd.read_csv(file_name, header=None).values
     x = normalize(x)
 
-    y = np.empty(x.shape[0])
-    y.fill(label)
+    y = x[, 72:]
+    x = x[, 0:72]
 
     return x, y
 
 
 def normalize(data):
-    df = pd.DataFrame(data, columns=['x1', 'y1', 'z1',
-                                     'x2', 'y2', 'z2',
-                                     'x3', 'y3', 'z3',
-                                     'x4', 'y4', 'z4',
-                                     'x5', 'y5', 'z5',
-                                     'g1', 'g2', 'g3'])
+    df = pd.DataFrame(data)
 
     colnames = list(df.columns)
 
@@ -35,10 +29,38 @@ def normalize(data):
     for i in colnames[15:18]:
         df[i] = df[i] / 250
 
+    for i in colnames[18:33]:
+        df[i] = df[i] / 2
+
+    for i in colnames[33:36]:
+        df[i] = df[i] / 250
+
+    for i in colnames[36:51]:
+        df[i] = df[i] / 2
+
+    for i in colnames[51:54]:
+        df[i] = df[i] / 250
+
+    for i in colnames[54:69]:
+        df[i] = df[i] / 2
+
+    for i in colnames[69:72]:
+        df[i] = df[i] / 250
+
     return df.values
 
 
+def segment(data):
+    return data
+
+
 if __name__ == '__main__':
-    normalize([[1, 2, 1, 2, 1, 2, 1, 2, 1, 2, 1, 2, 1, 2, 1, 100, 200, 100],
-               [1, 2, 1, 2, 1, 2, 1, 2, 1, 2, 1, 2, 1, 2, 1, 100, 200, 100]])
+    print(normalize([[1, 2, 1, 2, 1, 2, 1, 2, 1, 2, 1, 2, 1, 2, 1, 100, 200, 100,
+                      1, 2, 1, 2, 1, 2, 1, 2, 1, 2, 1, 2, 1, 2, 1, 100, 200, 100,
+                      1, 2, 1, 2, 1, 2, 1, 2, 1, 2, 1, 2, 1, 2, 1, 100, 200, 100,
+                      1, 2, 1, 2, 1, 2, 1, 2, 1, 2, 1, 2, 1, 2, 1, 100, 200, 100, 0],
+                    [1, 2, 1, 2, 1, 2, 1, 2, 1, 2, 1, 2, 1, 2, 1, 100, 200, 100,
+                     1, 2, 1, 2, 1, 2, 1, 2, 1, 2, 1, 2, 1, 2, 1, 100, 200, 100,
+                     1, 2, 1, 2, 1, 2, 1, 2, 1, 2, 1, 2, 1, 2, 1, 100, 200, 100,
+                     1, 2, 1, 2, 1, 2, 1, 2, 1, 2, 1, 2, 1, 2, 1, 100, 200, 100, 0]]))
 
