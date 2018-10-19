@@ -2,7 +2,7 @@ import numpy as np
 from sklearn.metrics import accuracy_score
 from sklearn.metrics import confusion_matrix
 from sklearn.model_selection import KFold
-from sklearn.neighbors import KNeighborsClassifier
+from .export_knn_model import get_untrained_model
 
 
 def validate_knn(x, y):
@@ -16,7 +16,7 @@ def validate_knn(x, y):
         outfile.close()
 
     for train, test in kfold.split(x):
-        knn = KNeighborsClassifier(n_neighbors=5).fit(x[train], y[train])
+        knn = get_untrained_model().fit(x[train], y[train])
         prediction = knn.predict(x[test])
         accuracy = accuracy_score(prediction, y[test])
         cm = confusion_matrix(prediction, y[test])
