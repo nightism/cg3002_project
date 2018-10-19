@@ -3,6 +3,7 @@ from sklearn.metrics import accuracy_score
 from sklearn.metrics import confusion_matrix
 from sklearn.model_selection import KFold
 from sklearn.neural_network import MLPClassifier
+from .export_ann_model import get_untrained_model
 
 
 def validate_ann(x, y):
@@ -16,8 +17,7 @@ def validate_ann(x, y):
         outfile.close()
 
     for train, test in kfold.split(x):
-        ann = MLPClassifier(solver='lbfgs',
-                            hidden_layer_sizes=(100, 100), random_state=1).fit(x[train], y[train])
+        ann = get_untrained_model().fit(x[train], y[train])
         prediction = ann.predict(x[test])
         accuracy = accuracy_score(prediction, y[test])
         cm = confusion_matrix(prediction, y[test])
