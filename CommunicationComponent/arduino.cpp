@@ -18,10 +18,10 @@
 #define FALSE 0
 #define TRUE 1
 #define TIMEOUT_HANDSHAKE 5000
-#define TIMEOUT_EST 150 // Estimate Timeout from test (141 for FREQ = 10)
+#define TIMEOUT_EST 1000 // Estimate Timeout from test (141 for FREQ = 10)
 #define TIMEOUT_VAR 0.7 // Weight for calculating timeout
-#define RSFREQ 10
-#define SRFREQ 10
+#define RSFREQ 2
+#define SRFREQ 2
 
 typedef struct {
   int sensorID;
@@ -106,8 +106,8 @@ int VOLTAGE_PIN = A1;  // Input pin for measuring volt
 Adafruit_ADXL345_Unified accel = Adafruit_ADXL345_Unified(12345);
 MPU6050 mpu6050(Wire);
 int accelNo = 0;
-int LHAND_PIN = 52; int RHAND_PIN = 38;
-int LKNEE_PIN = 42; int RKNEE_PIN = 48;
+int LHAND_PIN = 38; int RHAND_PIN = 52;
+int LKNEE_PIN = 48; int RKNEE_PIN = 42;
 
 // Creating string variables
 char leftHand_id[5], leftHand_x[6], leftHand_y[6], leftHand_z[6];
@@ -138,7 +138,7 @@ char headID[5];
   1. add timeout in python comms script
       a. for handshake TIMEOUT
       b. for serial data transfer TIMEOUT
-      c. for requesting of new handshake   
+      c. for requesting of new handshake
 **********************************************************************/
 
 
@@ -151,48 +151,62 @@ void read_sensor(void *p) {
   rsLastWakeTime = xTaskGetTickCount();
 
   while(1) {
-    xSemaphoreTake(mutex, (TickType_t) 1);
-    Serial.println("------READ SENSORS FUNC------");
 
-    digitalWrite(LHAND_PIN, LOW);
-    // digitalWrite(RHAND_PIN, HIGH);
-    // digitalWrite(LKNEE_PIN, HIGH);
-    // digitalWrite(RKNEE_PIN, HIGH);
-    read_ACC(sp.leftHand.sensorID);
-    digitalWrite(LHAND_PIN, HIGH);
+// /*
+//   Debugging
+// */
+// Serial.print("Current time sensor mutex = ");
+// Serial.println(millis());
 
-    // digitalWrite(LHAND_PIN, HIGH);
-    digitalWrite(RHAND_PIN, LOW);
-    // digitalWrite(LKNEE_PIN, HIGH);
-    // digitalWrite(RKNEE_PIN, HIGH);
-    read_ACC(sp.rightHand.sensorID);
-    digitalWrite(RHAND_PIN, HIGH);
+    if (xSemaphoreTake(mutex, (TickType_t) 1000)) {
+      // Serial.println("------READ SENSORS FUNC------");
 
-    // digitalWrite(LHAND_PIN, HIGH);
-    // digitalWrite(RHAND_PIN, HIGH);
-    digitalWrite(LKNEE_PIN, LOW);
-    // digitalWrite(RKNEE_PIN, HIGH);
-    read_ACC(sp.leftKnee.sensorID);
-    digitalWrite(LKNEE_PIN, HIGH);
+      digitalWrite(LHAND_PIN, LOW);
+      digitalWrite(RHAND_PIN, HIGH);
+      // digitalWrite(LKNEE_PIN, HIGH);
+      // digitalWrite(RKNEE_PIN, HIGH);
+      read_ACC(sp.leftHand.sensorID);
+      // digitalWrite(LHAND_PIN, HIGH);
 
-    // digitalWrite(LHAND_PIN, HIGH);
-    // digitalWrite(RHAND_PIN, HIGH);
-    // digitalWrite(LKNEE_PIN, HIGH);
-    digitalWrite(RKNEE_PIN, LOW);
-    read_ACC(sp.rightKnee.sensorID);
-    digitalWrite(RKNEE_PIN, HIGH);
+      digitalWrite(LHAND_PIN, HIGH);
+      digitalWrite(RHAND_PIN, LOW);
+      // digitalWrite(LKNEE_PIN, HIGH);
+      // digitalWrite(RKNEE_PIN, HIGH);
+      read_ACC(sp.rightHand.sensorID);
+      // digitalWrite(RHAND_PIN, HIGH);
 
-    read_IMU();
-    read_power();
+      // digitalWrite(LHAND_PIN, HIGH);
+      // digitalWrite(RHAND_PIN, HIGH);
+      // digitalWrite(LKNEE_PIN, LOW);
+      // digitalWrite(RKNEE_PIN, HIGH);
+      // read_ACC(sp.leftKnee.sensorID);
+      // // digitalWrite(LKNEE_PIN, HIGH);
+      //
+      // digitalWrite(LHAND_PIN, HIGH);
+      // digitalWrite(RHAND_PIN, HIGH);
+      // digitalWrite(LKNEE_PIN, HIGH);
+      // digitalWrite(RKNEE_PIN, LOW);
+      // read_ACC(sp.rightKnee.sensorID);
+      // digitalWrite(RKNEE_PIN, HIGH);
 
-    new_data = TRUE;
-    xSemaphoreGive(mutex);
+      read_IMU();
+      read_power();
+
+      new_data = TRUE;
+      xSemaphoreGive(mutex);
+    }
     /*
-        TODO: overflow and establish contact again
+        TODO: overflow
     */
 
+// /*
+//   Debugging
+// */
+// Serial.print("Current time end sensor = ");
+// Serial.println(millis());
+
     // Delay for 5ms, sampling rate = 200Hz
-    vTaskDelayUntil(&rsLastWakeTime, rsFrequency);
+    vTaskDelay(rsFrequency);
   }
 }
 
@@ -208,40 +222,52 @@ void read_IMU() {
   sp.torso.x_value = mpu6050.getAccX();
   sp.torso.y_value = mpu6050.getAccY();
   sp.torso.z_value = mpu6050.getAccZ();
-  sp.torso.g_x_value = mpu6050.getGyroAngleX();
-  sp.torso.g_y_value = mpu6050.getGyroAngleY();
-  sp.torso.g_z_value = mpu6050.getGyroAngleZ();
+  sp.torso.g_x_value = mpu6050.getGyroX();
+  sp.torso.g_y_value = mpu6050.getGyroY();
+  sp.torso.g_z_value = mpu6050.getGyroZ();
 }
 
 void read_ACC(int accelNo) {
-  // Serial.print("Reading Accel");
-  // Serial.print(accelNo);
-  // Serial.println("...");
-
   /*Get a new sensor event */
   sensors_event_t accelEvent;
   accel.getEvent(&accelEvent);
 
   switch (accelNo) {
     case 0:
-      sp.leftHand.x_value = accelEvent.acceleration.x;
-      sp.leftHand.y_value = accelEvent.acceleration.y;
-      sp.leftHand.z_value = accelEvent.acceleration.z;
-      break;
-    case 1:
       sp.rightHand.x_value = accelEvent.acceleration.x;
       sp.rightHand.y_value = accelEvent.acceleration.y;
       sp.rightHand.z_value = accelEvent.acceleration.z;
+      if((sp.rightHand.x_value + sp.rightHand.y_value + sp.rightHand.z_value) == 0) {
+        Serial.println("RH sensor broke");
+        accSetup(sp.rightHand.sensorID);
+      }
+      break;
+    case 1:
+      sp.leftHand.x_value = accelEvent.acceleration.x;
+      sp.leftHand.y_value = accelEvent.acceleration.y;
+      sp.leftHand.z_value = accelEvent.acceleration.z;
+      if((sp.leftHand.x_value + sp.leftHand.y_value + sp.leftHand.z_value) == 0) {
+        accSetup(sp.leftHand.sensorID);
+        Serial.println("LH sensor broke");
+      }
       break;
     case 2:
-      sp.leftKnee.x_value = accelEvent.acceleration.x;
-      sp.leftKnee.y_value = accelEvent.acceleration.y;
-      sp.leftKnee.z_value = accelEvent.acceleration.z;
-      break;
-    case 3:
       sp.rightKnee.x_value = accelEvent.acceleration.x;
       sp.rightKnee.y_value = accelEvent.acceleration.y;
       sp.rightKnee.z_value = accelEvent.acceleration.z;
+      if((sp.rightKnee.x_value + sp.rightKnee.y_value + sp.rightKnee.z_value) == 0) {
+        accSetup(sp.rightKnee.sensorID);
+        Serial.println("RK sensor broke");
+      }
+      break;
+    case 3:
+      sp.leftKnee.x_value = accelEvent.acceleration.x;
+      sp.leftKnee.y_value = accelEvent.acceleration.y;
+      sp.leftKnee.z_value = accelEvent.acceleration.z;
+      if((sp.leftKnee.x_value + sp.leftKnee.y_value + sp.leftKnee.z_value) == 0) {
+        accSetup(sp.leftKnee.sensorID);
+        Serial.println("LK sensor broke");
+      }
       break;
 
   }
@@ -262,8 +288,8 @@ void send_next() {
 }
 
 void send_reading_serial() {
-  Serial.println("Sending serial over...");
-  Serial.println(buffer);
+  // Serial.println("Sending serial over...");
+  // Serial.println(buffer);
   prevTime = millis();  // Starting Timer
 
   for(int i=0; i<len+2; i++) {
@@ -297,7 +323,7 @@ void send_reading_serial() {
 }
 
 void serialise(int id) {
-  xSemaphoreTake(mutex, (TickType_t) 1);
+  // xSemaphoreTake(mutex, (TickType_t) 1);
   char checksum = 0;
 
   // Append header ID to buffer
@@ -324,36 +350,22 @@ void serialise(int id) {
   strcat(buffer, checksumChar);
   strcat(buffer, ",");
   // buffer[len] = checksum;
-  Serial.print("Checksum = \'");
-  Serial.print(checksum);
-  Serial.print("\' checksumChar = ");
-  Serial.println(checksumChar);
+  // Serial.print("Checksum = \'");
+  // Serial.print(checksum);
+  // Serial.print("\' checksumChar = ");
+  // Serial.println(checksumChar);
 
   len = strlen(buffer);
-  Serial.print("Last in buffer is ");
-  Serial.print(buffer[len]);
-  Serial.println();
+  // Serial.print("Last in buffer is ");
+  // Serial.print(buffer[len]);
+  // Serial.println();
   buffer[len+1] = '\n'; // append \n to back of string
-  xSemaphoreGive(mutex);
+  // xSemaphoreGive(mutex);
 }
 
 void createMessage() {
-  Serial.println("Creating string~~~");
+  // Serial.println("Creating string~~~");
   // Converting int to characters
-
-  // leftHand
-  itoa(sp.leftHand.sensorID, leftHand_id, 10);
-  strcat(buffer, leftHand_id);
-  strcat(buffer, ",");
-  ftoa(leftHand_x, sp.leftHand.x_value, 2);
-  strcat(buffer, leftHand_x);
-  strcat(buffer, ",");
-  ftoa(leftHand_y, sp.leftHand.y_value, 2);
-  strcat(buffer, leftHand_y);
-  strcat(buffer, ",");
-  ftoa(leftHand_z, sp.leftHand.z_value, 2);
-  strcat(buffer, leftHand_z);
-  strcat(buffer, ",");
 
   // rightHand
   itoa(sp.rightHand.sensorID, rightHand_id, 10);
@@ -369,33 +381,47 @@ void createMessage() {
   strcat(buffer, rightHand_z);
   strcat(buffer, ",");
 
-  // // leftKnee
-  itoa(sp.leftKnee.sensorID, leftKnee_id, 10);
-  strcat(buffer, leftKnee_id);
+  // leftHand
+  itoa(sp.leftHand.sensorID, leftHand_id, 10);
+  strcat(buffer, leftHand_id);
   strcat(buffer, ",");
-  ftoa(leftKnee_x, sp.leftKnee.x_value, 2);
-  strcat(buffer, leftKnee_x);
+  ftoa(leftHand_x, sp.leftHand.x_value, 2);
+  strcat(buffer, leftHand_x);
   strcat(buffer, ",");
-  ftoa(leftKnee_y, sp.leftKnee.y_value, 2);
-  strcat(buffer, leftKnee_y);
+  ftoa(leftHand_y, sp.leftHand.y_value, 2);
+  strcat(buffer, leftHand_y);
   strcat(buffer, ",");
-  ftoa(leftKnee_z, sp.leftKnee.z_value, 2);
-  strcat(buffer, leftKnee_z);
+  ftoa(leftHand_z, sp.leftHand.z_value, 2);
+  strcat(buffer, leftHand_z);
   strcat(buffer, ",");
 
-  // rightKnee
-  itoa(sp.rightKnee.sensorID, rightKnee_id, 10);
-  strcat(buffer, rightKnee_id);
-  strcat(buffer, ",");
-  ftoa(rightKnee_x, sp.rightKnee.x_value, 2);
-  strcat(buffer, rightKnee_x);
-  strcat(buffer, ",");
-  ftoa(rightKnee_y, sp.rightKnee.y_value, 2);
-  strcat(buffer, rightKnee_y);
-  strcat(buffer, ",");
-  ftoa(rightKnee_z, sp.rightKnee.z_value, 2);
-  strcat(buffer, rightKnee_z);
-  strcat(buffer, ",");
+  // // rightKnee
+  // itoa(sp.rightKnee.sensorID, rightKnee_id, 10);
+  // strcat(buffer, rightKnee_id);
+  // strcat(buffer, ",");
+  // ftoa(rightKnee_x, sp.rightKnee.x_value, 2);
+  // strcat(buffer, rightKnee_x);
+  // strcat(buffer, ",");
+  // ftoa(rightKnee_y, sp.rightKnee.y_value, 2);
+  // strcat(buffer, rightKnee_y);
+  // strcat(buffer, ",");
+  // ftoa(rightKnee_z, sp.rightKnee.z_value, 2);
+  // strcat(buffer, rightKnee_z);
+  // strcat(buffer, ",");
+  //
+  // // leftKnee
+  // itoa(sp.leftKnee.sensorID, leftKnee_id, 10);
+  // strcat(buffer, leftKnee_id);
+  // strcat(buffer, ",");
+  // ftoa(leftKnee_x, sp.leftKnee.x_value, 2);
+  // strcat(buffer, leftKnee_x);
+  // strcat(buffer, ",");
+  // ftoa(leftKnee_y, sp.leftKnee.y_value, 2);
+  // strcat(buffer, leftKnee_y);
+  // strcat(buffer, ",");
+  // ftoa(leftKnee_z, sp.leftKnee.z_value, 2);
+  // strcat(buffer, leftKnee_z);
+  // strcat(buffer, ",");
 
   // torso
   itoa(sp.torso.sensorID, torso_id, 10);
@@ -439,64 +465,80 @@ void send_reading(void *p) {
   const TickType_t srFrequency = SRFREQ;
   srLastWakeTime = xTaskGetTickCount();
   while (1) {
-    xSemaphoreTake(mutex, (TickType_t) 1);
-    Serial.println("------SEND READING FUNC------");
+// /*
+//   Debugging
+// */
+// Serial.print("Current time serial mutex = ");
+// Serial.println(millis());
 
-    if (Serial3.available()) {
-      response = Serial3.read();
-    }
-    Serial.print("Response = ");
-    Serial.println(response);
+    if (xSemaphoreTake(mutex, (TickType_t) 1000)) {
+      // Serial.println("------SEND READING FUNC------");
 
-    if (response == 'A') {
-      currTime = millis() - prevTime;
-      Serial.print("Time for Data transfer RTT = ");
-      Serial.println(currTime);
-      Serial.println("Acknowledgment received from rPi");
-      reset_variables(response);
-    } else if (response == 'N') {
-      Serial.println("Duplicate data send, skipping...");
-      reset_variables(response);
-    } else if (response == 'R') {
-      Serial.println("Request previous buffer...");
-      send_reading_serial();
-      reset_variables(response);
-    } else if (response == 'H'){
-      Serial.println("Request for handshake...");
-      vTaskSuspendAll();
-      initialise_handshake();
-      xTaskResumeAll();
-      reset_variables(response);
-    } else if (millis() - prevTime > TIMEOUT_SERIAL) {
-      if (first_try) {
-        Serial.println("Trying to get ACK...");
-        // Reset prevTime
+      if (Serial3.available()) {
+        response = Serial3.read();
+      }
+      // Serial.print("Response = ");
+      // Serial.println(response);
+
+      if (header_id == 0) {
+        prevTime = millis();
+      }
+
+
+      if (response == 'A') {
+        currTime = millis() - prevTime;
+        Serial.print("Time for Data transfer RTT = ");
+        Serial.println(currTime);
+        Serial.println("Ack received from rPi");
+        reset_variables(response);
+      } else if (response == 'N') {
+        Serial.println("Duplicate data send, skipping...");
+        reset_variables(response);
+      } else if (response == 'R') {
+        Serial.println("Request previous buffer...");
         send_reading_serial();
-        first_try = FALSE;
-      } else {
-        Serial.println("Lost connections...");
-        response = 'T';
+        reset_variables(response);
+      } else if (response == 'H'){
+        Serial.println("Request for handshake...");
         vTaskSuspendAll();
         initialise_handshake();
         xTaskResumeAll();
+        reset_variables(response);
+      } else if (millis() - prevTime > TIMEOUT_SERIAL) {
+        if (first_try) {
+          Serial.println("Trying to get ACK...");
+          // Reset prevTime
+          send_reading_serial();
+          first_try = FALSE;
+        } else {
+          Serial.println("Lost connections...");
+          response = 'T';
+          vTaskSuspendAll();
+          initialise_handshake();
+          xTaskResumeAll();
+        }
+        reset_variables(response);
+      } else {
+        response = 0;
+        // Serial.print("NewDataFlag = ");
+        // Serial.print(new_data);
+        // Serial.print("; ack_received =  ");
+        // Serial.println(ack_received);
       }
-      reset_variables(response);
-    } else {
-      response = 0;
-      Serial.print("NewDataFlag = ");
-      Serial.print(new_data);
-      Serial.print("; ack_received =  ");
-      Serial.println(ack_received);
+
+      // New data available and Ack for previous packet received
+      // Sending next packet
+      if (new_data && ack_received) {
+        send_next();
+      }
+
+      xSemaphoreGive(mutex);
     }
 
-    // New data available and Ack for previous packet received
-    // Sending next packet
-    if (new_data && ack_received) {
-      send_next();
-    }
+// Serial.print("Current time end serial = ");
+// Serial.println(millis());
 
-    xSemaphoreGive(mutex);
-    vTaskDelayUntil(&srLastWakeTime, srFrequency);
+    vTaskDelay(srFrequency);
   }
 }
 /*-----------------------------------------------------*/
@@ -506,8 +548,8 @@ void send_reading(void *p) {
 void reset_variables(char res) {
   switch (res) {
     case 'A': case 'N':
-      //strcpy(buffer, "");
-      memset(buffer, 0, sizeof buffer);
+      strcpy(buffer, "");
+      // memset(buffer, 0, sizeof buffer);
       ack_received = 1;
       response = 0;
       first_try = TRUE;
@@ -528,8 +570,8 @@ void reset_variables(char res) {
       new_data = FALSE;
       first_try = TRUE;
       prevTime = millis();
-      //strcpy(buffer, "");
-      memset(buffer, 0, sizeof buffer);
+      strcpy(buffer, "");
+      // memset(buffer, 0, sizeof buffer);
       break;
     default: break;
   }
@@ -538,22 +580,50 @@ void reset_variables(char res) {
 void accSetup(int num) {
   int port = 0;
   switch (num) {
-    case 0: port = LHAND_PIN; break;
-    case 1: port = RHAND_PIN; break;
-    case 2: port = LKNEE_PIN; break;
-    case 3: port = RKNEE_PIN; break;
+    case 0:
+      port = RHAND_PIN;
+      digitalWrite(LHAND_PIN, HIGH);
+      // Serial.println("testLH");
+      // digitalWrite(LKNEE_PIN, HIGH);
+      // Serial.println("testLK");
+      // digitalWrite(RKNEE_PIN, HIGH);
+      // Serial.println("test0");
+      break;
+    case 1:
+      port = LHAND_PIN;
+      digitalWrite(RHAND_PIN, HIGH);
+      // Serial.println("testRH");
+      // digitalWrite(LKNEE_PIN, HIGH);
+      // Serial.println("testLK");
+      // digitalWrite(RKNEE_PIN, HIGH);
+      // Serial.println("test1");
+      break;
+    case 2:
+      port = RKNEE_PIN;
+      digitalWrite(LHAND_PIN, HIGH);
+      digitalWrite(RHAND_PIN, HIGH);
+      digitalWrite(LKNEE_PIN, HIGH);
+      // Serial.println("test2");
+      break;
+    case 3:
+      port = LKNEE_PIN;
+      digitalWrite(LHAND_PIN, HIGH);
+      digitalWrite(RHAND_PIN, HIGH);
+      digitalWrite(RKNEE_PIN, HIGH);
+      // Serial.println("test3");
+      break;
   }
-
+  // Serial.println("test outside switch");
   digitalWrite(port, LOW);
-  // Serial.print("Port activated = ");
-  // Serial.println(port);
+  Serial.print("Port activated = ");
+  Serial.println(port);
 
-  // if(!accel.begin()) {
-  //   /* There was a problem detecting the ADXL345 ... check your connections */
-  //   Serial.println("Ooops, no ADXL345 detected ... Check your wiring!");
-  //   while(1);
-  // }
-
+  if(!accel.begin()) {
+    /* There was a problem detecting the ADXL345 ... check your connections */
+    Serial.println("Ooops, no ADXL345 detected ... Check your wiring!");
+    while(1);
+  }
+// Serial.println("test after accel begin");
   // /* Set the range to whatever is appropriate for your project */
   accel.setRange(ADXL345_RANGE_2_G);
   accel.setDataRate(ADXL345_DATARATE_200_HZ);
@@ -605,22 +675,22 @@ void initialise_handshake(void) {
 
 
 void setup() {
-  sp.leftHand.sensorID = 0;
-  sp.rightHand.sensorID = 1;
-  sp.leftKnee.sensorID = 2;
-  sp.rightKnee.sensorID = 3;
+  sp.rightHand.sensorID = 0;
+  sp.leftHand.sensorID = 1;
+  sp.rightKnee.sensorID = 2;
+  sp.leftKnee.sensorID = 3;
   sp.torso.sensorID = 4;
 
   pinMode(LHAND_PIN, OUTPUT);
   pinMode(RHAND_PIN, OUTPUT);
-  pinMode(LKNEE_PIN, OUTPUT);
-  pinMode(RKNEE_PIN, OUTPUT);
+  // pinMode(LKNEE_PIN, OUTPUT);
+  // pinMode(RKNEE_PIN, OUTPUT);
 
-  // Pins are perpetually set to HIGH
-  digitalWrite(LHAND_PIN, HIGH);
-  digitalWrite(RHAND_PIN, HIGH);
-  digitalWrite(LKNEE_PIN, HIGH);
-  digitalWrite(RKNEE_PIN, HIGH);
+  // // Pins are perpetually set to HIGH
+  // digitalWrite(LHAND_PIN, HIGH);
+  // digitalWrite(RHAND_PIN, HIGH);
+  // digitalWrite(LKNEE_PIN, HIGH);
+  // digitalWrite(RKNEE_PIN, HIGH);
 
   pinMode(CURRENT_PIN, INPUT);
   pinMode(VOLTAGE_PIN, INPUT);
@@ -629,19 +699,22 @@ void setup() {
   Serial3.begin(115200);
 
   Serial.println("Arduino Powering up....");
-
+Serial.println("test1");
   Wire.begin();
+Serial.println("testwire");
   mpu6050.begin();
-
+Serial.println("test2");
   // mpu6050.calcGyroOffsets(true);
   mpu6050.setGyroOffsets(-2.30, -0.73, 1.40);
-
+Serial.println("test3");
   // Setting up the accelerometer
-  for (int i =0 ; i<4; i++) {
-    accSetup(i);
+  for (int i=0 ; i<2; i++) {
+    // if(i != 4)
+      accSetup(i);
   }
 
   initialise_handshake();
+  // TIMEOUT_SERIAL = TIMEOUT_EST/2;
 
   xTaskCreate(read_sensor, "Reading Sensor", STACK_SIZE, NULL, 1, NULL);
   xTaskCreate(send_reading, "Sending Reading", STACK_SIZE, NULL, 2, NULL);
