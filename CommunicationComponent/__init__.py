@@ -192,6 +192,7 @@ class TcpClass:
         counter = 0
 
         while (infLoop == True):
+            # poll model for prediction
             # if(self.MSG == None):
                 # continue
 
