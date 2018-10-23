@@ -70,8 +70,8 @@ class SerClass:
     nack = ("N").encode()
     res = ("R").encode()
     # setup
-    # ser = serial.Serial("/dev/serial0", 115200)
-    # ser.flushInput()
+    ser = serial.Serial("/dev/serial0", 115200)
+    ser.flushInput()
     time0 = 0
 
     def init(self):
@@ -156,7 +156,7 @@ class SerClass:
                         dataQueue.put(dataList)
 
                     '''
-                    # parse data, add to dataQueue
+                    # parse data, add to just dataQueue
                     dataList = []
                     for x in range(0, 16):
                         if (x == 0 or x == 1 or x == 5 or x == 9):  # indexes that contain header + sensor id
@@ -171,10 +171,10 @@ class SerClass:
                     # cumpower calc
                     voltage = float(packet.rsplit(',', 2)[1])
                     voltage = (voltage * 10) / 1023  # convert to Volts
-                    print("Voltage: ", voltage)
+                    # print("Voltage: ", voltage)
                     current = float(packet.rsplit(',', 2)[2])
                     current = (current * 5) / 1023  # convert to Amperes
-                    print("Current: ", current)
+                    # print("Current: ", current)
                     if (self.time0 == 0):
                         self.time0 = time.time()
                     else:
@@ -183,17 +183,18 @@ class SerClass:
                         cumPower += voltage * current * timeElapsed
                         power = voltage * current
                         self.time0 = newTime
-                        print("Cumpower: ", cumPower)
+                        # print("Cumpower: ", cumPower)
 
 
 class TcpClass:
     MSG = bytes("#|0|0|0|0|", 'utf8')
+    lastMsgTime = None
     startTime = None
     dataList = []
     predictArr = [0, 0, 0, 0]
     predictCount = 0
-    moveList = ["idle", "wipers", "number7", "chicken", "sidestep", "turnclap", "number6", "salute", "mermaid", "swing",
-                "cowboy"]
+    moveList = ["", "wipers", "number7", "chicken", "sidestep", "turnclap", "number6", "salute", "mermaid", "swing",
+                "cowboy", "logout"]
 
     def init(self):
         self.running = True
@@ -252,7 +253,7 @@ class TcpClass:
     def run(self):
         global currMove
         global dataQueue
-        TCP_IP = '172.17.79.247'
+        TCP_IP = '192.168.137.1'
         TCP_PORT = 88
         # BUFFER_SIZE = 100
         SECRET_KEY = bytes("hellohellohello!", 'utf8')
@@ -282,7 +283,7 @@ class TcpClass:
 
             # message generation
             self.createMsg()
-            print(self.MSG)
+            print(self.moveList[currMove])
 
             '''
             # temp termination
@@ -298,7 +299,7 @@ class TcpClass:
             '''
 
             # send message block
-            if self.MSG:
+            if self.MSG and (self.lastMsgTime is None or time.time() - self.lastMsgTime > 5):
                 # initialise cipher
                 iv = Random.new().read(AES.block_size)
                 cipher = AES.new(SECRET_KEY, AES.MODE_CBC, iv)
@@ -310,9 +311,12 @@ class TcpClass:
 
                 s.send(encodeMsg)
 
+                # update message delay time
+                self.lastMsgTime = time.time()
+
             # counter += 1
             currMove = 0
-            sleep(2)
+            # sleep(2)
 
         s.close()
 
@@ -329,12 +333,12 @@ model = prediction_interface.get_model()
 tcpComm = TcpClass()
 tcpCommThread = Thread(target=tcpComm.run)
 
-# serComm = SerClass()
-# serCommThread = Thread(target=serComm.run)
+serComm = SerClass()
+serCommThread = Thread(target=serComm.run)
 
-dataTest = DataTestClass()
-dataTestThread = Thread(target=dataTest.run)
+# dataTest = DataTestClass()
+# dataTestThread = Thread(target=dataTest.run)
 
-dataTestThread.start()
-# serCommThread.start()
+# dataTestThread.start()
+serCommThread.start()
 tcpCommThread.start()
