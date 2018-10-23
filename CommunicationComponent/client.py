@@ -187,14 +187,19 @@ class SerClass:
 
 
 class TcpClass:
-    MSG = bytes("#|0|0|0|0|", 'utf8')
+    # core variables
+    MSG = None
+    infLoop = None
     lastMsgTime = None
     startTime = None
     dataList = []
     predictArr = [0, 0, 0, 0]
-    predictCount = 0
     moveList = ["", "wipers", "number7", "chicken", "sidestep", "turnclap", "number6", "salute", "mermaid", "swing",
                 "cowboy", "logout"]
+
+    # debug and temp variables
+    # moveCount = 0
+    # predictCount = 0
 
     def init(self):
         self.running = True
@@ -208,6 +213,12 @@ class TcpClass:
         global current
         global power
         global cumPower
+
+        # temp move count termination for 5 move assessment, terminate on 21st move
+        # if self.moveCount == 20:
+        #    self.MSG = bytes("#logout" + "|" + str(format(voltage, '.2f')) + "|" + str(format(current, '.2f')) + "|"
+        #                     + str(format(power, '.2f')) + "|" + str(format(cumPower, '.2f')) + "|", 'utf8')
+
         # if currMove == 0 and self.predictCount != 10:
         if currMove == 0:
             # self.MSG = bytes("#|" + str(format(voltage, '.2f')) + "|" + str(format(current, '.2f')) + "|"
@@ -216,7 +227,7 @@ class TcpClass:
             return
 
         # to test sending
-        self.predictCount = 0
+        # self.predictCount = 0
 
         self.MSG = bytes(
             "#" + self.moveList[currMove] + "|" + str(voltage) + "|" + str(current) + "|" + str(power) + "|" + str(
@@ -233,7 +244,7 @@ class TcpClass:
         self.dataList.pop(0)
 
         # to test sending
-        self.predictCount += 1
+        # self.predictCount += 1
 
         if time.time() - self.startTime < 0.2:
             # print(time.time() - self.startTime)
@@ -263,8 +274,7 @@ class TcpClass:
         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         s.connect((TCP_IP, TCP_PORT))
 
-        # infLoop = True
-        # counter = 0
+        self.infLoop = True
 
         # wait for min sensor readings
         while dataQueue.qsize() < 10:
@@ -273,7 +283,7 @@ class TcpClass:
             self.dataList.append(dataQueue.get())
 
         # infinite loop for prediction and sending
-        while True:
+        while self.infLoop is True:
             # poll model for prediction
             # if self.getPredict() == 0 or self.getPredict() == None:
             #    continue
@@ -286,19 +296,12 @@ class TcpClass:
             print(self.moveList[currMove])
 
             '''
-            # temp termination
-            if (counter > 6):
-                self.MSG = bytes("#logout|1|2|3|4|", 'utf8')
+            # future termination by logout move, 11 is logout
+            if(currMove == 11):
                 infLoop = False
             '''
 
-            '''
-            # future termination
-            if(currMove == "logout"):
-                infLoop = False
-            '''
-
-            # send message block
+            # send message block, delay to send max once every 5s
             if self.MSG and (self.lastMsgTime is None or time.time() - self.lastMsgTime > 5):
                 # initialise cipher
                 iv = Random.new().read(AES.block_size)
@@ -311,10 +314,12 @@ class TcpClass:
 
                 s.send(encodeMsg)
 
-                # update message delay time
+                # temp move count increment for 5 move assessment termination
+                # self.moveCount += 1
+
+                # update message time for delay between sends
                 self.lastMsgTime = time.time()
 
-            # counter += 1
             currMove = 0
             # sleep(2)
 
