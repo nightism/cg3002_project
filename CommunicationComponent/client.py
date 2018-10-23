@@ -207,10 +207,16 @@ class TcpClass:
         global current
         global power
         global cumPower
+        # if currMove == 0 and self.predictCount != 10:
         if currMove == 0:
-            self.MSG = bytes("#|" + str(format(voltage, '.2f')) + "|" + str(format(current, '.2f')) + "|"
-                             + str(format(power, '.2f')) + "|" + str(format(cumPower, '.2f')) + "|", 'utf8')
+            # self.MSG = bytes("#|" + str(format(voltage, '.2f')) + "|" + str(format(current, '.2f')) + "|"
+            #                 + str(format(power, '.2f')) + "|" + str(format(cumPower, '.2f')) + "|", 'utf8')
+            self.MSG = None
             return
+
+        # to test sending
+        self.predictCount = 0
+
         self.MSG = bytes(
             "#" + self.moveList[currMove] + "|" + str(voltage) + "|" + str(current) + "|" + str(power) + "|" + str(
                 cumPower) + "|", 'utf8')
@@ -224,7 +230,10 @@ class TcpClass:
         # print("predict")
         self.dataList.append(dataQueue.get())
         self.dataList.pop(0)
+
+        # to test sending
         self.predictCount += 1
+
         if time.time() - self.startTime < 0.2:
             # print(time.time() - self.startTime)
             return
@@ -238,13 +247,12 @@ class TcpClass:
             currMove = self.predictArr[0]
         else:
             currMove = 0
-        self.predictCount = 0
         # print(self.moveList[currMove])
 
     def run(self):
         global currMove
         global dataQueue
-        TCP_IP = '192.168.137.1'
+        TCP_IP = '172.17.79.247'
         TCP_PORT = 88
         # BUFFER_SIZE = 100
         SECRET_KEY = bytes("hellohellohello!", 'utf8')
@@ -253,14 +261,6 @@ class TcpClass:
         # initiate connection to server
         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         s.connect((TCP_IP, TCP_PORT))
-
-        iv = Random.new().read(AES.block_size)
-        cipher = AES.new(SECRET_KEY, AES.MODE_CBC, iv)
-        # encrypt and encode message with AES_CBC and base64 then transmit
-        padMsg = pad(self.MSG, AES.block_size)
-        encryptMsg = cipher.encrypt(padMsg)
-        encodeMsg = base64.b64encode(iv + encryptMsg)
-        s.send(encodeMsg)
 
         # infLoop = True
         # counter = 0
@@ -297,16 +297,18 @@ class TcpClass:
                 infLoop = False
             '''
 
-            # initialise cipher
-            iv = Random.new().read(AES.block_size)
-            cipher = AES.new(SECRET_KEY, AES.MODE_CBC, iv)
-            # encrypt and encode message with AES_CBC and base64 then transmit
-            padMsg = pad(self.MSG, AES.block_size)
-            encryptMsg = cipher.encrypt(padMsg)
-            encodeMsg = base64.b64encode(iv + encryptMsg)
-            # print(encodeMsg)
+            # send message block
+            if self.MSG:
+                # initialise cipher
+                iv = Random.new().read(AES.block_size)
+                cipher = AES.new(SECRET_KEY, AES.MODE_CBC, iv)
+                # encrypt and encode message with AES_CBC and base64 then transmit
+                padMsg = pad(self.MSG, AES.block_size)
+                encryptMsg = cipher.encrypt(padMsg)
+                encodeMsg = base64.b64encode(iv + encryptMsg)
+                # print(encodeMsg)
 
-            s.send(encodeMsg)
+                s.send(encodeMsg)
 
             # counter += 1
             currMove = 0
