@@ -68,6 +68,7 @@ class SerClass:
     # core variables
     ser = serial.Serial("/dev/serial0", 115200)
     time0 = 0
+    lastMsgTime = None
 
     # serial messages
     hello = ("H").encode()
@@ -81,6 +82,21 @@ class SerClass:
     def end(self):
         self.running = False
 
+    def handshake(self):
+        self.ser.write(self.hello)
+        time.sleep(0.3)
+        if self.ser.in_waiting > 0:
+            ackMsg = self.ser.read().decode()
+            if ackMsg == 'A':
+                self.ser.write(self.ack)
+                self.ser.readline()
+                self.lastMsgTime = time.time()
+                return True
+            else:
+                print("handshaking tbd")
+                sleep(0.3)
+        return False
+
     def run(self):
         global voltage
         global current
@@ -88,22 +104,11 @@ class SerClass:
         global cumPower
         global dataQueue
 
-        isHandshakeDone = False
         self.ser.flushInput()
 
         # handshaking
-        while isHandshakeDone is False:
-            self.ser.write(self.hello)
-            time.sleep(0.3)
-            if self.ser.in_waiting > 0:
-                ackMsg = self.ser.read().decode()
-                if ackMsg == 'A':
-                    self.ser.write(self.ack)
-                    isHandshakeDone = True
-                    self.ser.readline()
-                else:
-                    print("handshaking tbd")
-                    sleep(0.3)
+        while self.handshake() is False:
+            continue
         prevHeader = -1
 
         # receive packet
@@ -186,6 +191,14 @@ class SerClass:
                         power = voltage * current
                         self.time0 = newTime
                         # print("Cumpower: ", cumPower)
+
+            '''
+            # re-handshake functionality
+            else:
+                if time.time() - self.lastMsgTime > 5:
+                    while self.handshake() is False:
+                        continue
+            '''
 
 
 class TcpClass:
