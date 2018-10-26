@@ -152,11 +152,11 @@ class SerClass:
                     with open('/home/pi/Desktop/data.csv', 'a') as csvfile:
                         filewriter = csv.writer(csvfile, delimiter=',', quotechar='|', quoting=csv.QUOTE_MINIMAL)
                         dataList = []
-                        for x in range(0, 16):
-                            if x == 0 or x == 1 or x == 5 or x == 9:  # indexes that contain header + sensor id
+                        for x in range(0, 20):
+                            if x == 0 or x == 1 or x == 5 or x == 9 or x == 13:  # indexes that contain header+sensor id
                                 continue
-                            val = float(packet.split(',', 18)[x])  # 18 is number of values that should remain
-                            # header id, 3 sensor id, 12 sensor readings, voltage + current
+                            val = float(packet.split(',', 22)[x])  # 22 is number of values that should remain
+                            # header id, 4 sensor id, 15 sensor readings, voltage + current
                             dataList.append(val)
                         # print(dataList)
                         filewriter.writerow(dataList)
