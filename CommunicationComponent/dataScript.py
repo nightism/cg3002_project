@@ -64,6 +64,7 @@ class serClass:
         self.running = False
 
     def run(self):
+        global MOVE
         isHandshakeDone = False
 
         # handshaking
@@ -122,6 +123,8 @@ class serClass:
                     # parsing data, temp write to csv
                     with open('data.csv', 'a') as csvfile:
                         filewriter = csv.writer(csvfile, delimiter=',', quotechar='|', quoting=csv.QUOTE_MINIMAL)
+                        header = ["d1", "d2", "d3", "d4", "d5", "d6", "d7", "d8", "d9", "d10", "d11", "d12", "target"]
+                        filewriter.writerow(header)
                         dataList = []
                         for x in range(0, 16):
                             if (x == 0 or x == 1 or x == 5 or x == 9):  # indexes that contain header + sensor id
@@ -130,6 +133,7 @@ class serClass:
                                             x])  # 18 is number of values that should remain, header id, 3 sensor id, 12 sensor readings, voltage + current
                             dataList.append(val)
                         print(dataList)
+                        dataList.append(MOVE)
                         filewriter.writerow(dataList)
 
                     # cumpower calc
@@ -149,57 +153,9 @@ class serClass:
                         print("Cumpower: ", self.cumPower)
 
 
-class tcp:
-    def init(self):
-        self.running = True
-
-    def end(self):
-        self.running = False
-
-    def run(self):
-        TCP_IP = '172.25.101.100'
-        TCP_PORT = 88
-        # BUFFER_SIZE = 100
-        MSG = bytes("#chicken | 1 | 2 | 3 | 4 |", 'utf8')
-        SECRET_KEY = bytes("hellohellohello!", 'utf8')
-
-        # initiate connection to server
-        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        s.connect((TCP_IP, TCP_PORT))
-
-        infLoop = True
-        counter = 0
-
-        while (infLoop == True):
-            if (counter > 3):
-                MSG = bytes("#logout | 1 | 2 | 3 | 4 |", 'utf8')
-                infLoop = False
-
-            # initialise cipher
-            iv = Random.new().read(AES.block_size)
-            cipher = AES.new(SECRET_KEY, AES.MODE_CBC, iv)
-            # encrypt and encode message with AES_CBC and base64 then transmit
-            padMsg = pad(MSG, AES.block_size)
-            # padMsg = MESSAGE
-            encryptMsg = cipher.encrypt(padMsg)
-            encodeMsg = base64.b64encode(iv + encryptMsg)
-            print(encodeMsg)
-
-            s.send(encodeMsg)
-
-            counter += 1
-
-            sleep(5)
-
-        s.close()
-
-
-# threading
-# tcpComm = tcp()
-# tcpCommThread = Thread(target=tcpComm.run)
+MOVE = sys.argv[1]
 
 serComm = serClass()
 serCommThread = Thread(target=serComm.run)
 
-# tcpCommThread.start()
 serCommThread.start()
