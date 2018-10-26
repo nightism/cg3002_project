@@ -12,7 +12,7 @@ def get_predictions(model, data):
     NUM_FEATURES = 12
     NUM_DATA = 8
     data = prediction_functions.normalize_data(pd.DataFrame(data))
-    processed_data = np.reshape(data, (1, NUM_FEATURES * NUM_DATA))
+    processed_data = np.reshape(data.values, (1, NUM_FEATURES * NUM_DATA))
     prediction = model.predict(processed_data)
     return np.argmax(prediction)
 
