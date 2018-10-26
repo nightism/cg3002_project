@@ -2,16 +2,14 @@ import pickle
 import sklearn
 from CommunicationComponent.prediction_model import prediction_functions
 import numpy as np
-import pandas as pd
 
 def get_model():
-    model_name = "model_3"
+    model_name = "model_2"
     return prediction_functions.load_model(model_name)
 
 def get_predictions(model, data):
     NUM_FEATURES = 12
     NUM_DATA = 8
-    data = prediction_functions.normalize_data(pd.DataFrame(data))
     processed_data = np.reshape(data, (1, NUM_FEATURES * NUM_DATA))
     prediction = model.predict(processed_data)
     return np.argmax(prediction)
