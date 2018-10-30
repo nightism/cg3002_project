@@ -104,9 +104,8 @@ class SerClass:
         global cumPower
         global dataQueue
 
-        self.ser.flushInput()
-
         # handshaking
+        self.ser.flushInput()
         while self.handshake() is False:
             continue
         prevHeader = -1
@@ -195,9 +194,12 @@ class SerClass:
             '''
             # re-handshake functionality
             else:
-                if time.time() - self.lastMsgTime > 5:
+                if time.time() - self.lastMsgTime > 2:
+                    self.ser.close()
+                    self.ser = serial.Serial("/dev/serial0", 115200)
+                    self.ser.flushInput()
                     while self.handshake() is False:
-                        continue
+                        print("Re-handshaking")
             '''
 
 
@@ -296,9 +298,9 @@ class TcpClass:
         self.infLoop = True
 
         # wait for min sensor readings
-        while dataQueue.qsize() < 10:
+        while dataQueue.qsize() < 16:
             continue
-        for x in range(0, 8):
+        for x in range(0, 16):
             self.dataList.append(dataQueue.get())
 
         # infinite loop for prediction and sending

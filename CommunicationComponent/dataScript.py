@@ -6,56 +6,24 @@ from threading import Thread
 from time import sleep
 import time
 import serial
-# import queue as q
+import sys
 import csv
-
-# from Crypto.Util.Padding import pad
-from Crypto import Random
-from Crypto.Cipher import AES
-
-import base64
 
 from Crypto.Util.py3compat import *
 
 
-# imported pad function from Crypto.Util.Padding
-def pad(data_to_pad, block_size, style='pkcs7'):
-    """Apply standard padding.
-    :Parameters:
-      data_to_pad : byte string
-            The data that needs to be padded.
-      block_size : integer
-            The block boundary to use for padding. The output length is guaranteed
-            to be a multiple of ``block_size``.
-      style : string
-            Padding algorithm. It can be *'pkcs7'* (default), *'iso7816'* or *'x923'*.
-    :Return:
-      The original data with the appropriate padding added at the end.
-    """
+class SerClass:
+    # core variables
+    ser = serial.Serial("/dev/serial0", 115200)
+    time0 = 0
+    lastMsgTime = None
+    cumPower = 0
 
-    padding_len = block_size - len(data_to_pad) % block_size
-    if style == 'pkcs7':
-        padding = bchr(padding_len) * padding_len
-    elif style == 'x923':
-        padding = bchr(0) * (padding_len - 1) + bchr(padding_len)
-    elif style == 'iso7816':
-        padding = bchr(128) + bchr(0) * (padding_len - 1)
-    else:
-        raise ValueError("Unknown padding style")
-    return data_to_pad + padding
-
-
-class serClass:
+    # serial messages
     hello = ("H").encode()
     ack = ("A").encode()
     nack = ("N").encode()
     res = ("R").encode()
-    # dataQueue = q.Queue()
-    cumPower = 0
-    # setup
-    ser = serial.Serial("/dev/ttyS0", 115200)
-    ser.flushInput()
-    time0 = 0
 
     def init(self):
         self.running = True
@@ -63,31 +31,39 @@ class serClass:
     def end(self):
         self.running = False
 
+    def handshake(self):
+        self.ser.write(self.hello)
+        time.sleep(0.3)
+        if self.ser.in_waiting > 0:
+            ackMsg = self.ser.read().decode()
+            print("received ack msg ", ackMsg)
+            if ackMsg == 'A':
+                self.ser.write(self.ack)
+                self.ser.readline()
+                self.lastMsgTime = time.time()
+                print("received A")
+                return True
+            else:
+                print("handshaking tbd")
+                sleep(0.3)
+        return False
+
     def run(self):
         global MOVE
-        isHandshakeDone = False
 
         # handshaking
-        while (isHandshakeDone == False):
-            self.ser.write(self.hello)
-            time.sleep(0.3)
-            if (self.ser.in_waiting > 0):
-                ackMsg = self.ser.read().decode()
-                if ackMsg == ('A'):
-                    self.ser.write(self.ack)
-                    isHandshakeDone = True
-                    self.ser.readline()
-                else:
-                    print("handshaking tbd")
-                    sleep(0.3)
+        self.ser.flush()
+        while self.handshake() is False:
+            continue
         prevHeader = -1
+        num = 0
 
         # receive packet
         while True:
             if (self.ser.in_waiting > 8):
                 packet = self.ser.readline().decode()
                 packet = packet.strip('\x00')
-                dataList = list()
+                self.lastMsgTime = time.time()
                 print("Message ", packet)
                 print("test what is ", packet.split(',', 1)[0])
                 currHeader = int(packet.split(',', 1)[0])
@@ -119,23 +95,30 @@ class serClass:
                         file.truncate()
                         file.close()
                     '''
+                    '''
+                    header = ["d1", "d2", "d3", "d4", "d5", "d6", "d7", "d8", "d9", "d10", "d11", "d12",
+                              "d13", "d14", "d15", "target"]
+                    '''
+
+                    header = ["d1", "d2", "d3", "d4", "d5", "d6", "d7", "d8", "d9", "d10", "d11", "d12", "target"]
 
                     # parsing data, temp write to csv
                     with open('data.csv', 'a') as csvfile:
                         filewriter = csv.writer(csvfile, delimiter=',', quotechar='|', quoting=csv.QUOTE_MINIMAL)
-                        header = ["d1", "d2", "d3", "d4", "d5", "d6", "d7", "d8", "d9", "d10", "d11", "d12", "target"]
-                        filewriter.writerow(header)
+                        if num == 0:
+                            filewriter.writerow(header)
                         dataList = []
-                        for x in range(0, 20):
-                            if x == 0 or x == 1 or x == 5 or x == 9 or x == 13:  # indexes that contain header+sensor id
+                        for x in range(0, 16):
+                            if x == 0 or x == 1 or x == 5 or x == 9:  # indexes that contain header+sensor id
                                 continue
-                            val = float(packet.split(',', 22)[x])  # 22 is number of values that should remain
-                            # header id, 4 sensor id, 15 sensor readings, voltage + current
+                            val = float(packet.split(',', 18)[x])  # 18 is number of values that should remain
+                            # header id, 3 sensor id, 12 sensor readings, voltage + current
                             dataList.append(val)
                         print(dataList)
                         dataList.append(MOVE)
                         filewriter.writerow(dataList)
 
+                    num = 1
                     # cumpower calc
                     voltage = float(packet.rsplit(',', 2)[1])
                     voltage = (voltage * 10) / 1023  # convert to Volts
@@ -152,10 +135,21 @@ class serClass:
                         self.time0 = newTime
                         print("Cumpower: ", self.cumPower)
 
+            # re-handshake functionality
+            else:
+                if time.time() - self.lastMsgTime > 5:
+                    self.ser.close()
+                    self.ser = serial.Serial("/dev/serial0", 115200)
+                    sleep(0.2)
+                    self.ser.flush()
+                    self.ser.readline()
+                    while self.handshake() is False:
+                        print("Re-handshaking")
+
 
 MOVE = sys.argv[1]
 
-serComm = serClass()
+serComm = SerClass()
 serCommThread = Thread(target=serComm.run)
 
 serCommThread.start()
