@@ -2,7 +2,7 @@ import numpy as np
 import pandas as pd
 from sklearn.model_selection import train_test_split
 from sklearn.neural_network import MLPClassifier
-from sklearn.metrics import classification_report,confusion_matrix
+from sklearn.metrics import classification_report, confusion_matrix
 from sklearn.preprocessing import OneHotEncoder
 import keras
 import pickle
@@ -29,7 +29,7 @@ def normalize_data(data):
         if (count < 9):
             data[col] = data[col] / (2 * 9.81)
         elif (count < 12):
-            data[col] = data[col] / 250
+            data[col] = data[col] / (4 * 9.81)
         else:
             break
         count = count + 1

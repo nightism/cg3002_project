@@ -1,7 +1,5 @@
 #!/usr/bin/env python
 
-import socket
-
 from threading import Thread
 from time import sleep
 from CommunicationComponent.prediction_model import prediction_interface
@@ -10,12 +8,6 @@ import numpy as np
 import serial
 import queue as q
 import csv
-
-# from Crypto.Util.Padding import pad
-from Crypto import Random
-from Crypto.Cipher import AES
-
-import base64
 
 from Crypto.Util.py3compat import *
 
@@ -288,22 +280,22 @@ class TcpClass:
     def run(self):
         global currMove
         global dataQueue
-        TCP_IP = '192.168.137.1'
+        TCP_IP = '192.168.43.231'
         TCP_PORT = 88
         # BUFFER_SIZE = 100
         SECRET_KEY = bytes("hellohellohello!", 'utf8')
         self.startTime = time.time()
 
         # initiate connection to server
-        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        s.connect((TCP_IP, TCP_PORT))
+        # s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        # s.connect((TCP_IP, TCP_PORT))
 
         self.infLoop = True
 
         # wait for min sensor readings
-        while dataQueue.qsize() < 16:
+        while dataQueue.qsize() < 35:
             continue
-        for x in range(0, 16):
+        for x in range(0, 30):
             self.dataList.append(dataQueue.get())
 
         # infinite loop for prediction and sending
@@ -325,7 +317,8 @@ class TcpClass:
                 infLoop = False
             '''
 
-            # send message block, delay to send max once every 5s
+            '''
+			# send message block, delay to send max once every 5s
             if self.MSG and (self.lastMsgTime is None or time.time() - self.lastMsgTime > 5):
                 # initialise cipher
                 iv = Random.new().read(AES.block_size)
@@ -343,6 +336,7 @@ class TcpClass:
 
                 # update message time for delay between sends
                 self.lastMsgTime = time.time()
+            '''
 
             currMove = 0
             # sleep(2)
