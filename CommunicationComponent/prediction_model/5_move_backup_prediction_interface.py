@@ -4,7 +4,7 @@ from CommunicationComponent.prediction_model import prediction_functions
 import numpy as np
 
 def get_model():
-    model_name = "model_2"
+    model_name = "model_2_fivemove"
     return prediction_functions.load_model(model_name)
 
 def get_predictions(model, data):

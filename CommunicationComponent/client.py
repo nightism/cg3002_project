@@ -152,10 +152,10 @@ class SerClass:
                     with open('/home/pi/Desktop/data.csv', 'a') as csvfile:
                         filewriter = csv.writer(csvfile, delimiter=',', quotechar='|', quoting=csv.QUOTE_MINIMAL)
                         dataList = []
-                        for x in range(0, 20):
-                            if x == 0 or x == 1 or x == 5 or x == 9 or x == 13:  # indexes that contain header+sensor id
+                        for x in range(0, 16):
+                            if x == 0 or x == 1 or x == 5 or x == 9:  # indexes that contain header+sensor id
                                 continue
-                            val = float(packet.split(',', 22)[x])  # 22 is number of values that should remain
+                            val = float(packet.split(',', 18)[x])  # 18 is number of values that should remain
                             # header id, 4 sensor id, 15 sensor readings, voltage + current
                             dataList.append(val)
                         # print(dataList)
@@ -214,7 +214,7 @@ class TcpClass:
     startTime = None
     dataList = []
     predictArr = [0, 0, 0, 0]
-    moveList = ["idle", "wipers", "number7", "chicken", "sidestep", "turnclap", "number6", "salute", "mermaid", "swing",
+    moveList = ["idle", "wipers", "number7", "chicken", "sidestep", "turnclap", "numbersix", "salute", "mermaid", "swing",
                 "cowboy", "logout"]
 
     # debug and temp variables
@@ -326,7 +326,7 @@ class TcpClass:
             '''
 
             # send message block, delay to send max once every 5s
-            if self.MSG and (self.lastMsgTime is None or time.time() - self.lastMsgTime > 5):
+            if self.MSG and (self.lastMsgTime is None or time.time() - self.lastMsgTime > 3):
                 # initialise cipher
                 iv = Random.new().read(AES.block_size)
                 cipher = AES.new(SECRET_KEY, AES.MODE_CBC, iv)

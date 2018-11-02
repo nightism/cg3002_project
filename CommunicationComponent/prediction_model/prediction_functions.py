@@ -2,7 +2,7 @@ import numpy as np
 import pandas as pd
 from sklearn.model_selection import train_test_split
 from sklearn.neural_network import MLPClassifier
-from sklearn.metrics import classification_report, confusion_matrix
+from sklearn.metrics import classification_report, confusion_matrix, accuracy_score
 from sklearn.preprocessing import OneHotEncoder
 import keras
 import pickle
@@ -27,9 +27,9 @@ def normalize_data(data):
     count = 0
     for col in data.columns:
         if (count < 9):
-            data[col] = data[col] / (2 * 9.81)
+            data[col] = data[col]  # / (2 * 9.81)
         elif (count < 12):
-            data[col] = data[col] / (4 * 9.81)
+            data[col] = data[col]  # / (4 * 9.81)
         else:
             break
         count = count + 1
@@ -86,7 +86,7 @@ def get_data():
     data_x.reset_index(drop=True)
     data_y = pd.concat(data_y, axis=0)
     data_y.reset_index(drop=True)
-    train_x, test_x, train_y, test_y = train_test_split(data_x, data_y, test_size=0.00, random_state=42, shuffle=True)
+    train_x, test_x, train_y, test_y = train_test_split(data_x, data_y, test_size=0.20, random_state=42, shuffle=True)
 
     print(train_x.shape)
     print(test_x.shape)
@@ -101,7 +101,7 @@ def get_data():
 
 def get_trained_model(train_x, train_y, test_x, test_y):
     NUM_EPOCHS = 200
-    mlp = MLPClassifier(hidden_layer_sizes=(96, 64, 32), verbose=True, max_iter=300)
+    mlp = MLPClassifier(hidden_layer_sizes=(128, 96, 64, 32), verbose=True, max_iter=300, tol=0.00001)
     mlp.fit(train_x, train_y)
     return mlp
 
@@ -153,7 +153,7 @@ def load_and_evaluate_model(model_name):
 
 
 if __name__ == "__main__":
-    model_name = "emil_net"
+    model_name = "unnormed_data"
     # load_and_evaluate_model(model_name)
     train_and_save_model(model_name)
 # predictions = mlp.predict(test_x)
