@@ -5,7 +5,7 @@ import numpy as np
 import pandas as pd
 
 def get_model():
-    model_name = "model_9_logout"
+    model_name = "model_logout"
     return prediction_functions.load_model(model_name)
 
 def get_predictions(model, data):
