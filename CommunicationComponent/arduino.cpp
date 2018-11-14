@@ -107,7 +107,7 @@ Adafruit_ADXL345_Unified accel = Adafruit_ADXL345_Unified(12345);
 MPU6050 mpu6050(Wire);
 int accelNo = 0;
 int LHAND_PIN = 38; int RHAND_PIN = 52;
-int LKNEE_PIN = 48; int RKNEE_PIN = 42;
+int LKNEE_PIN = 48; int RKNEE_PIN = 42; // LK 48, RK 42
 
 // Creating string variables
 char leftHand_id[5], leftHand_x[6], leftHand_y[6], leftHand_z[6];
@@ -146,9 +146,7 @@ char headID[5];
 /*>>>>>>>>>>>>>>>READING FUNCTIONS>>>>>>>>>>>>>>>>>>>>>*/
 /*-----------------------------------------------------*/
 void read_sensor(void *p) {
-  TickType_t rsLastWakeTime;
   const TickType_t rsFrequency = RSFREQ;
-  rsLastWakeTime = xTaskGetTickCount();
 
   while(1) {
 
@@ -178,9 +176,9 @@ void read_sensor(void *p) {
       // digitalWrite(LHAND_PIN, HIGH);
       // digitalWrite(RHAND_PIN, HIGH);
       // digitalWrite(LKNEE_PIN, LOW);
-      // digitalWrite(RKNEE_PIN, HIGH);
+      // // digitalWrite(RKNEE_PIN, HIGH);
       // read_ACC(sp.leftKnee.sensorID);
-      // // digitalWrite(LKNEE_PIN, HIGH);
+      // digitalWrite(LKNEE_PIN, HIGH);
       //
       // digitalWrite(LHAND_PIN, HIGH);
       // digitalWrite(RHAND_PIN, HIGH);
@@ -191,6 +189,19 @@ void read_sensor(void *p) {
 
       read_IMU();
       read_power();
+
+      // Serial.print("LHAND Values: ");
+      // Serial.print(sp.leftHand.x_value);
+      // Serial.print(" , ");
+      // Serial.print(sp.leftHand.y_value);
+      // Serial.print(" , ");
+      // Serial.println(sp.leftHand.z_value);
+      // Serial.print("RHAND Values: ");
+      // Serial.print(sp.rightHand.x_value);
+      // Serial.print(" , ");
+      // Serial.print(sp.rightHand.y_value);
+      // Serial.print(" , ");
+      // Serial.println(sp.rightHand.z_value);
 
       new_data = TRUE;
       xSemaphoreGive(mutex);
@@ -461,9 +472,7 @@ void createMessage() {
 }
 
 void send_reading(void *p) {
-  TickType_t srLastWakeTime;
   const TickType_t srFrequency = SRFREQ;
-  srLastWakeTime = xTaskGetTickCount();
   while (1) {
 // /*
 //   Debugging
@@ -477,19 +486,18 @@ void send_reading(void *p) {
       if (Serial3.available()) {
         response = Serial3.read();
       }
-      // Serial.print("Response = ");
-      // Serial.println(response);
+      Serial.print("Response = ");
+      Serial.println(response);
 
       if (header_id == 0) {
         prevTime = millis();
       }
-
+// prevTime = millis();
 
       if (response == 'A') {
         currTime = millis() - prevTime;
-        Serial.print("Time for Data transfer RTT = ");
+        Serial.print("Ack, RTT = ");
         Serial.println(currTime);
-        Serial.println("Ack received from rPi");
         reset_variables(response);
       } else if (response == 'N') {
         Serial.println("Duplicate data send, skipping...");
@@ -515,6 +523,7 @@ void send_reading(void *p) {
           response = 'T';
           vTaskSuspendAll();
           initialise_handshake();
+          send_reading_serial();
           xTaskResumeAll();
         }
         reset_variables(response);
@@ -609,7 +618,7 @@ void accSetup(int num) {
       port = LKNEE_PIN;
       digitalWrite(LHAND_PIN, HIGH);
       digitalWrite(RHAND_PIN, HIGH);
-      digitalWrite(RKNEE_PIN, HIGH);
+      // digitalWrite(RKNEE_PIN, HIGH);
       // Serial.println("test3");
       break;
   }
@@ -638,7 +647,11 @@ void initialise_handshake(void) {
     if (Serial3.available()) {
       char readByte = Serial3.read();
       if (readByte == 'H') {
+        Serial3.flush();
         Serial3.write('A');
+        Serial.print(readByte);
+        Serial.print(" ");
+        Serial.println(ack_flag);
         // Start timer for RTT calculation
         RTT_prevTime = millis();
         // Serial.print("RTT prevTime = ");
@@ -709,7 +722,7 @@ Serial.println("test2");
 Serial.println("test3");
   // Setting up the accelerometer
   for (int i=0 ; i<2; i++) {
-    // if(i != 4)
+    // if(i != 2)
       accSetup(i);
   }
 
