@@ -321,7 +321,7 @@ class TcpClass:
             self.createMsg()
             print(self.moveList[currMove])
 
-            # send message block, delay to send max once every 5s
+            # send message block, delay to send max once every 3s
             if self.MSG and (self.lastMsgTime is None or time.time() - self.lastMsgTime > 3):
                 # initialise cipher
                 iv = Random.new().read(AES.block_size)
