@@ -185,16 +185,13 @@ class SerClass:
                     if self.time0 == 0:
                         self.time0 = time.time()
                     else:
-                        voltage += 0.1
-                        current += 0.1
                         newTime = time.time()
                         timeElapsed = newTime - self.time0
                         power = voltage * current
-                        cumPower += (power * timeElapsed)/3600
+                        cumPower += (power * timeElapsed)/3600 # calculated in Watt Hours
                         self.time0 = newTime
                         # print("Cumpower: ", cumPower)
 
-            '''
             # re-handshake functionality
             else:
                 if time.time() - self.lastMsgTime > 2:
@@ -205,7 +202,6 @@ class SerClass:
                     self.ser.readline()
                     while self.handshake() is False:
                         print("Re-handshaking")
-            '''
 
 
 class TcpClass:
@@ -245,8 +241,6 @@ class TcpClass:
 
         # if currMove == 0 and self.predictCount != 10:
         if currMove == 0:
-            # self.MSG = bytes("#|" + str(format(voltage, '.2f')) + "|" + str(format(current, '.2f')) + "|"
-            #                 + str(format(power, '.2f')) + "|" + str(format(cumPower, '.2f')) + "|", 'utf8')
             self.MSG = None
             return
 
@@ -262,6 +256,8 @@ class TcpClass:
         global model
         global currMove
         # print("predict")
+
+        # advance data window
         self.dataList.append(dataQueue.get())
         self.dataList.pop(0)
 
@@ -290,9 +286,9 @@ class TcpClass:
     def run(self):
         global currMove
         global dataQueue
+        # IP address to change based on host
         TCP_IP = '192.168.43.231'
         TCP_PORT = 88
-        # BUFFER_SIZE = 100
         SECRET_KEY = bytes("hellohellohello!", 'utf8')
         self.startTime = time.time()
 
@@ -311,17 +307,13 @@ class TcpClass:
         # infinite loop for prediction and sending
         while self.infLoop is True:
             # poll model for prediction
-            # if self.getPredict() == 0 or self.getPredict() == None:
-            #    continue
-            # if(self.MSG == None):
-            # continue
             self.getPredict()
 
             # message generation
             self.createMsg()
             print(self.moveList[currMove])
 
-            # send message block, delay to send max once every 5s
+            # send message block, delay to send max once every 3s
             if self.MSG and (self.lastMsgTime is None or time.time() - self.lastMsgTime > 3):
                 # initialise cipher
                 iv = Random.new().read(AES.block_size)
