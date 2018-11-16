@@ -185,10 +185,12 @@ class SerClass:
                     if self.time0 == 0:
                         self.time0 = time.time()
                     else:
+                        voltage += 0.1
+                        current += 0.1
                         newTime = time.time()
                         timeElapsed = newTime - self.time0
-                        cumPower += voltage * current * timeElapsed
                         power = voltage * current
+                        cumPower += (power * timeElapsed)/3600
                         self.time0 = newTime
                         # print("Cumpower: ", cumPower)
 
@@ -288,7 +290,7 @@ class TcpClass:
     def run(self):
         global currMove
         global dataQueue
-        TCP_IP = '192.168.137.1'
+        TCP_IP = '192.168.43.231'
         TCP_PORT = 88
         # BUFFER_SIZE = 100
         SECRET_KEY = bytes("hellohellohello!", 'utf8')
@@ -319,12 +321,6 @@ class TcpClass:
             self.createMsg()
             print(self.moveList[currMove])
 
-            '''
-            # future termination by logout move, 11 is logout
-            if(currMove == 11):
-                infLoop = False
-            '''
-
             # send message block, delay to send max once every 5s
             if self.MSG and (self.lastMsgTime is None or time.time() - self.lastMsgTime > 3):
                 # initialise cipher
@@ -344,8 +340,9 @@ class TcpClass:
                 # update message time for delay between sends
                 self.lastMsgTime = time.time()
 
-            currMove = 0
-            # sleep(2)
+            # final termination by logout move, 11 is logout
+            if currMove == 11:
+                self.infLoop = False
 
         s.close()
 
