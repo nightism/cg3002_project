@@ -128,19 +128,6 @@ char headID[5];
   grey   gnd
 */
 
-/*********************************************************************
-                              WARNING
-  1. Please add/change these lines containing 'break' to if-else
-  2. add self.ser.readline after 	isHandshakeDone = True
-  3. add packet = packet.strip('\x00')
-        to remove leading and trailing \x00
-                              TODO
-  1. add timeout in python comms script
-      a. for handshake TIMEOUT
-      b. for serial data transfer TIMEOUT
-      c. for requesting of new handshake
-**********************************************************************/
-
 
 /*-----------------------------------------------------*/
 /*>>>>>>>>>>>>>>>READING FUNCTIONS>>>>>>>>>>>>>>>>>>>>>*/
@@ -306,31 +293,6 @@ void send_reading_serial() {
   for(int i=0; i<len+2; i++) {
     Serial3.write(buffer[i]); // Serial3 write
   }
-
-  // Serial.print("LHAND Values: ");
-  // Serial.print(sp.leftHand.x_value);
-  // Serial.print(" , ");
-  // Serial.print(sp.leftHand.y_value);
-  // Serial.print(" , ");
-  // Serial.println(sp.leftHand.z_value);
-  // Serial.print("RHAND Values: ");
-  // Serial.print(sp.rightHand.x_value);
-  // Serial.print(" , ");
-  // Serial.print(sp.rightHand.y_value);
-  // Serial.print(" , ");
-  // Serial.println(sp.rightHand.z_value);
-  // Serial.print("LKNEE Values: ");
-  // Serial.print(sp.leftKnee.x_value);
-  // Serial.print(" , ");
-  // Serial.print(sp.leftKnee.y_value);
-  // Serial.print(" , ");
-  // Serial.println(sp.leftKnee.z_value);
-  // Serial.print("RKNEE Values: ");
-  // Serial.print(sp.rightKnee.x_value);
-  // Serial.print(" , ");
-  // Serial.print(sp.rightKnee.y_value);
-  // Serial.print(" , ");
-  // Serial.println(sp.rightKnee.z_value);
 }
 
 void serialise(int id) {
@@ -492,7 +454,7 @@ void send_reading(void *p) {
       if (header_id == 0) {
         prevTime = millis();
       }
-// prevTime = millis();
+      // prevTime = millis();
 
       if (response == 'A') {
         currTime = millis() - prevTime;
@@ -658,7 +620,7 @@ void initialise_handshake(void) {
         // Serial.println(RTT_prevTime);
         ack_flag = 1;
         Serial.println("Received Hello from Pi.");
-      } else if ((readByte == 'A')&&(ack_flag == 1)) {
+      } else if ((readByte == 'A')&&(ack_flag == 1)) {	// Received ACK after Hello
         RTT_currTime = millis() - RTT_prevTime;
         handshake_done = TRUE;
         Serial.println("Handshaking done! Sweaty palms~");
@@ -712,20 +674,16 @@ void setup() {
   Serial3.begin(115200);
 
   Serial.println("Arduino Powering up....");
-Serial.println("test1");
   Wire.begin();
-Serial.println("testwire");
   mpu6050.begin();
-Serial.println("test2");
   // mpu6050.calcGyroOffsets(true);
   mpu6050.setGyroOffsets(-2.30, -0.73, 1.40);
-Serial.println("test3");
   // Setting up the accelerometer
   for (int i=0 ; i<2; i++) {
-    // if(i != 2)
       accSetup(i);
   }
 
+  // The following two lines are switch between commmenting when testing without rPi
   initialise_handshake();
   // TIMEOUT_SERIAL = TIMEOUT_EST/2;
 
