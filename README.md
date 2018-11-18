@@ -8,6 +8,7 @@ This package contains all the C++ files run on the Arduino Mega and Python scrip
 - `client.py`: the final script run on the Raspberry Pi
 - `local_client.py`: testing script that does not perform TCP communication with the server
 - `dataScript.py`: script used for collecting sensor readings and writing it to a CSV file for model training
+- `prediction_model`: contains scripts necessary for the client to interface with the model. Model used can be changed in `prediction_interface.py`
 - `lib`: contains all the library files used in the C++ program on Arduino Mega
 
 ## Prediction Component
